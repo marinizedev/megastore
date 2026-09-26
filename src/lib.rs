@@ -1,5 +1,5 @@
 // src/lib.rs
 
-pub mod modelo;
-pub mod grafo;
 pub mod benchmark;
+pub mod grafo;
+pub mod modelo;

@@ -1,9 +1,9 @@
 // src/benchmark/mod.rs
 
-use std::time::Instant;
 use crate::grafo::{self, Grafo};
-use crate::modelo::produto::Produto;
 use crate::modelo::cliente::Cliente;
+use crate::modelo::produto::Produto;
+use std::time::Instant;
 
 pub fn gerar_dados_ficticios(n_clientes: u32, n_produtos: u32, compras_por_cliente: u32) -> Grafo {
     let mut g = Grafo::new();
@@ -18,7 +18,11 @@ pub fn gerar_dados_ficticios(n_clientes: u32, n_produtos: u32, compras_por_clien
     }
 
     for cid in 1..=n_clientes {
-        g.adicionar_cliente(Cliente::new(cid, &format!("Cliente {}", cid), "Cidade Genérica"));
+        g.adicionar_cliente(Cliente::new(
+            cid,
+            &format!("Cliente {}", cid),
+            "Cidade Genérica",
+        ));
 
         for i in 0..compras_por_cliente {
             let produto_id = ((cid + i) % n_produtos) + 1;
@@ -29,12 +33,29 @@ pub fn gerar_dados_ficticios(n_clientes: u32, n_produtos: u32, compras_por_clien
     g
 }
 
-pub fn medir_tempo_recomendacao(grafo: &Grafo, cliente_id: u32, max_saltos: u32) -> (Vec<(u32, u32)>, u128) {
-    let inicio = Instant::now();
-    let resultado = grafo::busca::recomendar(grafo, cliente_id, max_saltos);
-    let duracao = inicio.elapsed().as_millis();
+pub fn medir_tempo_recomendacao(
+    grafo: &Grafo,
+    cliente_id: u32,
+    max_saltos: u32,
+    repeticoes: u32,
+) -> (Vec<(u32, u32)>, u128) {
+    // Execução de aquecimento. Ela não entra na média.
+    let _ = grafo::busca::recomendar(grafo, cliente_id, max_saltos);
 
-    (resultado, duracao)
+    let mut tempo_total_nanos: u128 = 0;
+    let mut ultimo_resultado: Vec<(u32, u32)> = Vec::new();
+
+    for _ in 0..repeticoes {
+        let inicio = Instant::now();
+
+        ultimo_resultado = grafo::busca::recomendar(grafo, cliente_id, max_saltos);
+
+        tempo_total_nanos += inicio.elapsed().as_nanos();
+    }
+
+    let tempo_medio_nanos = tempo_total_nanos / repeticoes as u128;
+
+    (ultimo_resultado, tempo_medio_nanos)
 }
 
 pub fn rodar_benchmark() {
@@ -50,11 +71,13 @@ pub fn rodar_benchmark() {
     println!("\n=== Benchmark de desempenho ===");
     for (n_clientes, n_produtos) in escalas {
         let g = gerar_dados_ficticios(n_clientes, n_produtos, 5);
-        let (_resultado, duracao_ms) = medir_tempo_recomendacao(&g, 1, 3);
+        let repeticoes = 10;
+
+        let (_resultado, tempo_medio_nanos) = medir_tempo_recomendacao(&g, 1, 3, repeticoes);
 
         println!(
-            "{} clientes / {} produtos → recomendação em {} ms",
-            n_clientes, n_produtos, duracao_ms
+            "{} clientes / {} produtos → média de {} ns em {} repetições",
+            n_clientes, n_produtos, tempo_medio_nanos, repeticoes
         );
     }
 }

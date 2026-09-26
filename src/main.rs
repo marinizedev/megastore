@@ -1,17 +1,17 @@
 // src/main.rs
 
-use megastore::modelo;
-use megastore::grafo::{self, Grafo};
 use megastore::benchmark;
 use megastore::grafo::dijkstra;
+use megastore::grafo::{self, Grafo};
+use megastore::modelo;
 
-use modelo::produto::Produto;
 use modelo::cliente::Cliente;
+use modelo::produto::Produto;
 
 fn processar_produto(produto: &Produto) {
     println!("Processando produto...");
     produto.exibir();
-} 
+}
 
 fn processar_cliente(cliente: &Cliente) {
     println!("Processando cliente...");
@@ -32,9 +32,24 @@ fn main() {
     let mut g = Grafo::new();
 
     // Produtos
-    g.adicionar_produto(modelo::produto::Produto::new(1, "Fone Bluetooth", "Eletrônicos", 129.90));
-    g.adicionar_produto(modelo::produto::Produto::new(2, "Carregador", "Eletrônicos", 39.90));
-    g.adicionar_produto(modelo::produto::Produto::new(3, "Mouse", "Eletrônicos", 59.90));
+    g.adicionar_produto(modelo::produto::Produto::new(
+        1,
+        "Fone Bluetooth",
+        "Eletrônicos",
+        129.90,
+    ));
+    g.adicionar_produto(modelo::produto::Produto::new(
+        2,
+        "Carregador",
+        "Eletrônicos",
+        39.90,
+    ));
+    g.adicionar_produto(modelo::produto::Produto::new(
+        3,
+        "Mouse",
+        "Eletrônicos",
+        59.90,
+    ));
 
     // Clientes
     g.adicionar_cliente(modelo::cliente::Cliente::new(1, "Ana Souza", "Goiânia"));
@@ -46,7 +61,7 @@ fn main() {
     g.adicionar_compra(2, 1, 4.0); // Bruno comprou Fone
     g.adicionar_compra(2, 3, 1.0); // Bruno comprou Mouse
 
-    // Recomendação para Ana (cliente 1), até 3 saltos  
+    // Recomendação para Ana (cliente 1), até 3 saltos
     let recomendacoes = grafo::busca::recomendar(&g, 1, 3);
     println!("Recomendações para Ana: {:?}", recomendacoes);
 
@@ -62,11 +77,11 @@ fn main() {
     g2.adicionar_cliente(Cliente::new(2, "Bruno Lima", "Anápolis"));
     g2.adicionar_cliente(Cliente::new(3, "Carla Reis", "Aparecida de Goiânia"));
 
-    g2.adicionar_compra(1, 1, 5.0);  // Ana comprou Fone
-    g2.adicionar_compra(2, 1, 1.0);  // Bruno: conexão FRACA com o Fone
-    g2.adicionar_compra(2, 3, 1.0);  // Bruno comprou Mouse
+    g2.adicionar_compra(1, 1, 5.0); // Ana comprou Fone
+    g2.adicionar_compra(2, 1, 1.0); // Bruno: conexão FRACA com o Fone
+    g2.adicionar_compra(2, 3, 1.0); // Bruno comprou Mouse
     g2.adicionar_compra(3, 1, 10.0); // Carla: conexão FORTE com o Fone
-    g2.adicionar_compra(3, 4, 1.0);  // Carla comprou Teclado
+    g2.adicionar_compra(3, 4, 1.0); // Carla comprou Teclado
 
     let rec_bfs = grafo::busca::recomendar(&g2, 1, 3);
     let rec_dijkstra = dijkstra::recomendar_dijkstra(&g2, 1, 5.0);

@@ -1,8 +1,8 @@
 // tests/recomendacao.rs
 
 use megastore::grafo::{self, Grafo};
-use megastore::modelo::produto::Produto;
 use megastore::modelo::cliente::Cliente;
+use megastore::modelo::produto::Produto;
 
 #[test]
 fn recomenda_produto_de_cliente_parecido() {
