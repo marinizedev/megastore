@@ -1,5 +1,7 @@
 // src/main.rs
 
+use std::env;
+
 use megastore::benchmark;
 use megastore::grafo::dijkstra;
 use megastore::grafo::{self, Grafo};
@@ -19,6 +21,8 @@ fn processar_cliente(cliente: &Cliente) {
 }
 
 fn main() {
+    let executar_benchmark = env::args().any(|argumento| argumento == "--benchmark");
+
     let produto = Produto::new(1, "Fone Bluetooth", "Eletrônicos", 129.90);
 
     processar_produto(&produto);
@@ -65,8 +69,6 @@ fn main() {
     let recomendacoes = grafo::busca::recomendar(&g, 1, 3);
     println!("Recomendações para Ana: {:?}", recomendacoes);
 
-    benchmark::rodar_benchmark();
-
     let mut g2 = Grafo::new();
 
     g2.adicionar_produto(Produto::new(1, "Fone Bluetooth", "Eletrônicos", 129.90));
@@ -97,4 +99,8 @@ fn main() {
     println!("\n=== Comparação BFS vs Dijkstra ===");
     println!("BFS (contagem de coocorrência): {:?}", rec_bfs);
     println!("Dijkstra (peso da conexão): {:?}", rec_dijkstra);
+
+    if executar_benchmark {
+        benchmark::rodar_benchmark();
+    }
 }
