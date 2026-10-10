@@ -39,6 +39,28 @@ impl Grafo {
             return false;
         }
 
+        if !self.clientes.contains_key(&cliente_id) {
+            eprintln!("Compra ignorada: cliente inexistente.");
+
+            return false;
+        }
+
+        if !self.produtos.contains_key(&produto_id) {
+            eprintln!("Compra ignorada: produto inexistente.");
+
+            return false;
+        }
+
+        if let Some(compras) = self.arestas.get(&cliente_id)
+            && compras
+                .iter()
+                .any(|(produto_existente, _)| *produto_existente == produto_id)
+        {
+            eprintln!("Compra ignorada: relação cliente-produto já cadastrada.");
+
+            return false;
+        }
+
         self.arestas
             .entry(cliente_id)
             .or_default()
@@ -155,9 +177,54 @@ mod tests {
     fn aceita_peso_positivo_e_finito() {
         let mut g = Grafo::new();
 
+        g.adicionar_cliente(Cliente::new(1, "Ana", "Goiânia"));
+        g.adicionar_produto(Produto::new(1, "Fone", "Eletrônicos", 100.0));
+
         let resultado = g.adicionar_compra(1, 1, 3.0);
 
         assert!(resultado);
+        assert_eq!(g.arestas.get(&1), Some(&vec![(1, 3.0)]));
+        assert_eq!(g.indice_produto_clientes.get(&1), Some(&vec![1]));
+    }
+
+    #[test]
+    fn rejeita_cliente_inexistente() {
+        let mut g = Grafo::new();
+
+        g.adicionar_produto(Produto::new(1, "Fone", "Eletrônicos", 100.0));
+
+        let resultado = g.adicionar_compra(999, 1, 3.0);
+
+        assert!(!resultado);
+        assert!(g.arestas.is_empty());
+        assert!(g.indice_produto_clientes.is_empty());
+    }
+
+    #[test]
+    fn rejeita_produto_inexistente() {
+        let mut g = Grafo::new();
+
+        g.adicionar_cliente(Cliente::new(1, "Ana", "Goiânia"));
+
+        let resultado = g.adicionar_compra(1, 999, 3.0);
+
+        assert!(!resultado);
+        assert!(g.arestas.is_empty());
+        assert!(g.indice_produto_clientes.is_empty());
+    }
+
+    #[test]
+    fn rejeita_compra_duplicada() {
+        let mut g = Grafo::new();
+
+        g.adicionar_cliente(Cliente::new(1, "Ana", "Goiânia"));
+        g.adicionar_produto(Produto::new(1, "Fone", "Eletrônicos", 100.0));
+
+        assert!(g.adicionar_compra(1, 1, 3.0));
+
+        let segunda_compra = g.adicionar_compra(1, 1, 5.0);
+
+        assert!(!segunda_compra);
         assert_eq!(g.arestas.get(&1), Some(&vec![(1, 3.0)]));
         assert_eq!(g.indice_produto_clientes.get(&1), Some(&vec![1]));
     }
