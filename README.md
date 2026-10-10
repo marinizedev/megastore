@@ -70,6 +70,19 @@ Cada produto possui:
 
 Cada aresta representa uma compra entre um cliente e um produto. A aresta armazena um peso numérico, que pode representar, por exemplo, a quantidade comprada ou a intensidade da preferência do cliente.
 
+### Validação do cadastro de compras
+
+O método `adicionar_compra` retorna um valor booleano indicando se a relação foi cadastrada com sucesso.
+
+Uma compra é aceita somente quando:
+
+- o peso é finito e maior que zero;
+- o cliente está cadastrado;
+- o produto está cadastrado;
+- a relação entre o cliente e o produto ainda não existe.
+
+Compras inválidas são rejeitadas antes de alterar a lista de adjacência ou o índice invertido. Essa validação evita referências para entidades inexistentes, arestas duplicadas e distorções no score das recomendações.
+
 ### Direção semântica e índice reverso
 
 A direção semântica da compra é **Cliente → Produto**. Entretanto, para realizar recomendações colaborativas, o sistema também mantém uma estrutura auxiliar no sentido inverso:
@@ -202,7 +215,14 @@ tests/
 cargo run
 ```
 
-Esse comando compila e executa o programa principal, que apresenta exemplos de cadastro, recomendação, comparação entre BFS e Dijkstra e benchmark.
+Esse comando compila e executa a demonstração funcional do sistema, apresentando:
+
+- exemplos de cadastro e consulta;
+- recomendação a partir de um cliente;
+- recomendação a partir de um produto;
+- comparação entre BFS e Dijkstra.
+
+O benchmark não é executado automaticamente nesse comando, pois utiliza cenários grandes e pode consumir uma quantidade significativa de memória.
 
 ### Executar em modo otimizado
 
@@ -210,7 +230,23 @@ Esse comando compila e executa o programa principal, que apresenta exemplos de c
 cargo run --release
 ```
 
-O modo `--release` é recomendado para as medições de desempenho, pois utiliza as otimizações do compilador Rust.
+O modo `--release` é recomendado para as medições de desempenho, pois utiliza as otimizações do compilador Rust e reduz a influência do modo de desenvolvimento nos tempos medidos.
+
+### Executar o benchmark
+
+Para executar o benchmark explicitamente em modo de desenvolvimento:
+
+```bash
+cargo run -- --benchmark
+```
+
+Para executar o benchmark em modo otimizado, recomendado para registrar os resultados de desempenho:
+
+```bash
+cargo run --release -- --benchmark
+```
+
+O argumento `--benchmark` ativa a geração dos cenários de teste e a medição da recomendação. Sem esse argumento, o programa executa apenas a demonstração funcional.
 
 ### Executar todos os testes
 
@@ -428,24 +464,28 @@ Os dados são gerados com:
 - 10 repetições da recomendação por cenário;
 - apresentação da média dos tempos em nanossegundos.
 
-Exemplo de execução:
+### Exemplo de benchmark:
+
+O benchmark deve ser executado explicitamente com o argumento `--benchmark`:
 
 ```bash
-cargo run --release
+cargo run --release -- --benchmark
 ```
 
 A medição atual utiliza `Instant` e apresenta a média dos tempos em nanossegundos (`ns`). O benchmark executa cada cenário 10 vezes, depois de uma execução de aquecimento que não entra no cálculo da média.
 
 Exemplo de saída:
 
+Uma execução em modo `--release` produziu a seguinte saída:
+
 ```text
 === Benchmark de desempenho ===
-100 clientes / 50 produtos → média de 10367 ns em 10 repetições
-1000 clientes / 200 produtos → média de 37948 ns em 10 repetições
-10000 clientes / 1000 produtos → média de 39756 ns em 10 repetições
-100000 clientes / 100000 produtos → média de 3827 ns em 10 repetições
-1000000 clientes / 1000000 produtos → média de 3446 ns em 10 repetições
-5000000 clientes / 5000000 produtos → média de 3772 ns em 10 repetições
+100 clientes / 50 produtos → média de 9224 ns em 10 repetições
+1000 clientes / 200 produtos → média de 15375 ns em 10 repetições
+10000 clientes / 1000 produtos → média de 24423 ns em 10 repetições
+100000 clientes / 100000 produtos → média de 3490 ns em 10 repetições
+1000000 clientes / 1000000 produtos → média de 3466 ns em 10 repetições
+5000000 clientes / 5000000 produtos → média de 3481 ns em 10 repetições
 ```
 
 Os valores acima são um exemplo de uma execução em modo `--release`. Eles podem variar conforme o hardware, o sistema operacional, a carga do ambiente e o modo de compilação. O modo `--release` tende a ser mais rápido por utilizar as otimizações do compilador.
@@ -487,7 +527,7 @@ Isso é muito menor que O(V²), custo de uma matriz de adjacência completa.
 
 ## Testes automatizados
 
-O projeto possui **18 testes automatizados**, sendo 16 testes unitários e 2 testes de integração:
+O projeto possui **21 testes automatizados**, sendo 19 testes unitários e 2 testes de integração:
 
 ### Testes unitários
 
@@ -499,9 +539,12 @@ São executados dentro dos módulos do código e verificam:
 - consulta de produto inexistente;
 - recomendação por produto;
 - soma do score quando vários clientes compraram o mesmo produto relacionado;
-- respeito ao limite de distância do Dijkstra.
+- respeito ao limite de distância do Dijkstra;
 - rejeição de pesos zero, negativos, `NaN` e infinito;
 - aceitação de peso positivo e finito;
+- rejeição de cliente inexistente;
+- rejeição de produto inexistente;
+- rejeição de compra duplicada;
 - comportamento de cliente sem compras;
 - comportamento de produto sem compradores;
 - comportamento com zero saltos;
@@ -523,9 +566,9 @@ cargo test --all-targets
 Resultado da validação atual:
 
 ```text
-16 testes unitários aprovados
+19 testes unitários aprovados
 2 testes de integração aprovados
-18 testes aprovados no total
+21 testes aprovados no total
 ```
 
 Também foram utilizados os comandos de qualidade:
@@ -541,13 +584,11 @@ Apesar de atender aos requisitos principais do trabalho, algumas melhorias podem
 
 - calcular também mediana e desvio-padrão no benchmark;
 - registrar automaticamente informações do hardware e do sistema operacional usado no benchmark;
-- tratar compras duplicadas de forma explícita, atualizando o peso ou rejeitando a duplicação;
 - retornar `Result` ao cadastrar compras inválidas, em vez de apenas retornar um valor booleano;
 - adicionar uma interface de entrada para cadastro de dados reais;
 - persistir clientes, produtos e compras em arquivos ou banco de dados;
 - incorporar categorias, avaliações e outros sinais ao cálculo da recomendação;
 - comparar o desempenho com outras estratégias de recomendação;
-- adicionar testes para IDs de clientes e produtos inexistentes;
 - avaliar estratégias adicionais de desempate e relevância.
 
 ## Repositório
